@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "immer": "^10.0.2",
     "redux": "^4.2.1"
   }
 }
