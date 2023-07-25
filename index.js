@@ -2,6 +2,12 @@
 const { produce } = require('immer');
 const redux = require('redux');
 const createStore = redux.createStore;
+//middlerware
+const applyMiddleWare = redux.applyMiddleware;
+
+//logger
+const logger = require('redux-logger').createLogger();
+
 
 //bind/combine actions Action creators
 const bindActionsCreators = redux.bindActionCreators;
@@ -141,15 +147,16 @@ const rootReducer = combineReducers({
     storeInfo: reducerStoreDetails
 })
 //initialize the store
-const store = createStore(rootReducer);
+const store = createStore(rootReducer, applyMiddleWare(logger));
 
 //====================================================================
 
 //====================================================================
 console.log('Initiale State', store.getState());
-const unsubcribe = store.subscribe(() => {
-    console.log('Updated State', store.getState());
-});
+// const unsubcribe = store.subscribe(() => {
+//     console.log('Updated State', store.getState());
+// });
+//const unsubcribe = store.subscribe(()=>{});
 //dispatching actions
 // store.dispatch(orderCake());
 // store.dispatch(orderCake(2)); 
@@ -171,4 +178,4 @@ actionCreators.updateZip(4321);
 actionCreators.updateCity('Johannesburg');
 //====================================================================
 
-unsubcribe();
+//unsubcribe();
