@@ -8,29 +8,36 @@ const applyMiddleWare = redux.applyMiddleware;
 //logger
 const logger = require('redux-logger').createLogger();
 
-
 //bind/combine actions Action creators
 const bindActionsCreators = redux.bindActionCreators;
-
 //bind/combine Reducers creators
 const combineReducers = redux.combineReducers;
+
 //immer for nested states
-const produceImmer = require('immer').produce
+const produceImmer = require('immer').produce;
+
+//thunk middleware
+const thunkMiddleware = require('redux-thunk').default;
+const axios = require('axios');
 
 //====================================================================
 //create an action
 const CAKE_ORDERED = 'CAKE_ORDERED';
 const CAKE_RESTOCK = 'CAKE_RESTOCK';
-
 const ICE_ORDERED = 'ICE_ORDERED';
 const ICE_RESTOCK = 'ICE_RESTOCK';
-
 const UPDATE_CITY = 'UPDATE_CITY';
 const UPDATE_STREET = 'UPDATE_STREET';
 const UPDATE_ZIP = 'UPDATE_ZIP';
+//create actions for users 
+const FETCH_USER_REQ = 'FETCH_USER_REQ';
+const FETCH_USER_SUCC = 'FETCH_USER_SUCC';
+const FETCH_USER_FAIL = 'FETCH_USER_FAIL';
 
+
+
+//action creators
 function orderCake(qty = 0) {
-
     return {
         type: CAKE_ORDERED,
         qty
@@ -43,7 +50,6 @@ function restockCake(qty = 0) {
     }
 }
 function orderIce(qty = 0) {
-
     return {
         type: ICE_ORDERED,
         qty
@@ -73,8 +79,24 @@ function updateCity(city = '') {
         city
     }
 }
-//====================================================================
 
+const fetchusersreq = () => {
+    return {
+        type: FETCH_USER_REQ
+    }
+}
+const fetchuserssucc = (users) => {
+    return {
+        type: FETCH_USER_SUCC,
+        users
+    }
+}
+const fetchusersfail = (error = '') => {
+    return {
+        type: FETCH_USER_FAIL,
+        error
+    }
+}
 //====================================================================
 //initializing states
 
@@ -94,7 +116,13 @@ const initialStoreDetails = {
     }
 
 }
-//create a Reducer
+const initialUsers = {
+    loading: false,
+    users: [],
+    error: ''
+}
+
+//create  reducers
 const reducerCake = (state = initialStateCake, action) => {
     switch (action.type) {
         case CAKE_ORDERED: return {
@@ -137,45 +165,84 @@ const reducerStoreDetails = (state = initialStoreDetails, action) => {
             return state;
     }
 }
-//====================================================================
+const reducerUsers = (state = initialUsers, action) => {
+    switch (action.type) {
+        case FETCH_USER_REQ: return {
+            ...state, loading: true
+        }
 
+        case FETCH_USER_SUCC: return {
+            ...state, loading: false, users: action.users
+        }
+
+        case FETCH_USER_FAIL: return {
+            ...state, loading: false, users: [], error: action.error
+        }
+
+        default: {
+            return state;
+        }
+    }
+}
 //====================================================================
 //combine reducers
 const rootReducer = combineReducers({
     cake: reducerCake,
     ice: reducerIce,
-    storeInfo: reducerStoreDetails
+    storeInfo: reducerStoreDetails,
+    users: reducerUsers
 })
-//initialize the store
-const store = createStore(rootReducer, applyMiddleWare(logger));
 
 //====================================================================
+//initialize the store
+//const store = createStore(rootReducer, applyMiddleWare(logger, thunkMiddleware));
+
+
+const store = createStore(rootReducer, applyMiddleWare(thunkMiddleware, logger));
 
 //====================================================================
 console.log('Initiale State', store.getState());
-// const unsubcribe = store.subscribe(() => {
-//     console.log('Updated State', store.getState());
-// });
+console.log('*************************Updated*************************');
+
 //const unsubcribe = store.subscribe(()=>{});
+
 //dispatching actions
 // store.dispatch(orderCake());
 // store.dispatch(orderCake(2)); 
 
 // action binder takes in objects and the store.dispatch
+
+const fetchUsers = () => {
+    return ((dispatch) => {
+        dispatch(fetchusersreq());
+        axios.get('https://jsonplaceholder.typicode.com/users').then(response => {
+            const users = response.data.map(user => user.id);
+            dispatch(fetchuserssucc(users));
+        }).catch(error => {
+            dispatch(fetchusersfail(error.message));
+        })
+    });
+}
+
+
 const actionCreators = bindActionsCreators({
     orderCake, restockCake,
     orderIce, restockIce,
-    updateStreet, updateZip, updateCity
+    updateStreet, updateZip, updateCity,
+    fetchUsers
 }, store.dispatch);
+// const unsubcribe = store.subscribe(() => {
+//     console.log('Updated State', store.getState());
+// });
 
 actionCreators.orderCake(2);
 actionCreators.restockCake(10);
 actionCreators.orderCake(1);
 actionCreators.restockIce(5);
-
 actionCreators.updateStreet('Alex');
 actionCreators.updateZip(4321);
 actionCreators.updateCity('Johannesburg');
-//====================================================================
+actionCreators.fetchUsers();
 
+//====================================================================
 //unsubcribe();
